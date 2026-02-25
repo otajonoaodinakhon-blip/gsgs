@@ -1,9 +1,15 @@
 services:
   - type: web
-    name: telegram-bot
-    env: python
+    name: telegram-media-bot
+    runtime: python
+    region: frankfurt
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
       - key: BOT_TOKEN
         value: 7848692560:AAGn_x-fLq7oReI5SYD4zBvC78cB6sTgj0U
+      - key: MAX_FILE_SIZE
+        value: 50
+      - key: PYTHON_VERSION
+        value: 3.11.0
