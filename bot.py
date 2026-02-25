@@ -1,57 +1,26 @@
-import os
-import yt_dlp
-import asyncio
+import os, yt_dlp
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-# Render environment variables
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "7848692560:AAGn_x-fLq7oReI5SYD4zBvC78cB6sTgj0U")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 PORT = int(os.environ.get("PORT", 8080))
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Link yuboring, men yuklab beraman")
+async def start(update: Update, context):
+    await update.message.reply_text("Link yubor:")
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = await update.message.reply_text("🔄 Yuklab olyapman...")
-    url = update.message.text
-    
+async def download(update: Update, context):
+    msg = await update.message.reply_text("⏳...")
     try:
-        filename = f"video_{update.message.from_user.id}.mp4"
-        
-        ydl_opts = {
-            'format': 'best[ext=mp4]/best',
-            'outtmpl': filename,
-            'quiet': True
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-            
-            with open(filename, 'rb') as f:
-                await update.message.reply_document(f)
-            
-            os.remove(filename)
-            
+        f = f"/tmp/{update.message.from_user.id}.mp4"
+        yt_dlp.YoutubeDL({'format':'best','outtmpl':f}).download([update.message.text])
+        await update.message.reply_document(open(f,'rb'))
+        os.remove(f)
         await msg.delete()
-        
     except Exception as e:
-        await msg.edit_text(f"Xatolik: {str(e)[:50]}")
+        await msg.edit_text(f"Xato")
 
-def main():
-    # Create application
-    app = Application.builder().token(BOT_TOKEN).build()
-    
-    # Add handlers
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    # Webhook for Render
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=BOT_TOKEN,
-        webhook_url=f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/{BOT_TOKEN}"
-    )
+app = Application.builder().token(BOT_TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download))
 
-if __name__ == "__main__":
-    main()
+app.run_webhook(listen="0.0.0.0", port=PORT, webhook_url=f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/{BOT_TOKEN}")
